@@ -421,7 +421,7 @@ def ipap_poweron(self, apply):
 
 
 @macro([["apply", Type.Boolean, False, "If true, set the power, otherwise only show changes"]])
-def ipap_restore_power(self, apply):
+def ipap_power_restore(self, apply):
     """
     This macro is intended to be used after the `ipap_poweroff` macro has been executed, 
     to restore the power state of the motors to their previous state.

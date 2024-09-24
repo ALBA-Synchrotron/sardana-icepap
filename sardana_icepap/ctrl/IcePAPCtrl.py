@@ -61,8 +61,9 @@ class IcepapController(MotorController):
     ctrl_attributes = {
         'Pmux': {
             Type: str,
-            Description: 'Attribute to set/get the PMUX configuration. See '
-                         'IcePAP user manual pag. 107',
+            Description: 'Attribute to set/get the PMUX configuration. '
+                         'Multiple comma separated commands are allowed as set value. '
+                         'See IcePAP user manual pag. 107',
             Access: DataAccess.ReadWrite},
     }
     axis_attributes = {
@@ -816,39 +817,41 @@ class IcepapController(MotorController):
     def SetCtrlPar(self, parameter, value):
         param = parameter.lower()
         if param == 'pmux':
-            value = value.lower()
-            if 'remove' in value:
-                args = value.split()
-                dest = ''
-                if len(args) > 1:
-                    dest = args[-1]
-                self.ipap.clear_pmux(dest=dest)
-            else:
-                args = value.split()
-                if 'pmux' in args:
-                    args.pop(args.index('pmux'))
-                if len(args) == 1:
-                    self.ipap.add_pmux(source=args[0])
-                else:
-                    hard = 'hard' in args
-                    if hard:
-                        args.pop(args.index('hard'))
-                    pos = 'pos' in args
-                    if pos:
-                        args.pop(args.index('pos'))
-                    aux = 'aux' in value
-                    if aux:
-                        args.pop(args.index('aux'))
-
-                    source = args[0]
+            # Multiple comma separated commands are allowed
+            commands = value.lower().split(",")
+            for command in commands:
+                if 'remove' in command:
+                    args = command.split()
                     dest = ''
-                    if len(args) == 2:
-                        dest = args[1]
-                    if not any([pos, aux]):
-                        self.ipap.add_pmux(source=source, dest=dest)
+                    if len(args) > 1:
+                        dest = args[-1]
+                    self.ipap.clear_pmux(dest=dest)
+                else:
+                    args = command.split()
+                    if 'pmux' in args:
+                        args.pop(args.index('pmux'))
+                    if len(args) == 1:
+                        self.ipap.add_pmux(source=args[0])
                     else:
-                        self.ipap.add_pmux(source=source, dest=dest,
-                                           pos=pos, aux=aux, hard=hard)
+                        hard = 'hard' in args
+                        if hard:
+                            args.pop(args.index('hard'))
+                        pos = 'pos' in args
+                        if pos:
+                            args.pop(args.index('pos'))
+                        aux = 'aux' in command
+                        if aux:
+                            args.pop(args.index('aux'))
+
+                        source = args[0]
+                        dest = ''
+                        if len(args) == 2:
+                            dest = args[1]
+                        if not any([pos, aux]):
+                            self.ipap.add_pmux(source=source, dest=dest)
+                        else:
+                            self.ipap.add_pmux(source=source, dest=dest,
+                                               pos=pos, aux=aux, hard=hard)
         else:
             super(IcepapController, self).SetCtrlPar(parameter, value)
 

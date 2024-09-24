@@ -825,6 +825,8 @@ class IcepapController(MotorController):
                 self.ipap.clear_pmux(dest=dest)
             else:
                 args = value.split()
+                if 'pmux' in args:
+                    args.pop(args.index('pmux'))
                 if len(args) == 1:
                     self.ipap.add_pmux(source=args[0])
                 else:

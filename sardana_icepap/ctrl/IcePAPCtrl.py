@@ -141,16 +141,16 @@ class IcepapController(MotorController):
         'Encoder': {Type: float, Access: ReadOnly},
         'EcamDatTable': {Type: [float], Access: ReadWrite,
                          MaxDimSize: (20477,)},
-        'SyncAux': {Type: [str],
+        'SyncAux': {Type: str,
                     Description: 'Internal auxiliary synchronization line. '
                                  'It can use the same signals sources than '
                                  'InfoX.',
                     Access: ReadWrite},
-        'SyncPos': {Type: [str],
+        'SyncPos': {Type: str,
                     Description: 'Associates the internal Sync signal to the '
                                  'position signal selected',
                     Access: ReadWrite},
-        'SyncRes': {Type: [str],
+        'SyncRes': {Type: str,
                     Description: 'Sets the resolution of the internal Sync '
                                  'position signal.',
                     Access: ReadWrite},
@@ -761,7 +761,8 @@ class IcepapController(MotorController):
             return self.ipap[axis].get_velocity(vtype='CURRENT')
         elif parameter == 'syncres':
             # TODO implement attribute on axis class
-            return self.ipap[axis].send_cmd('?syncres')
+            result = self.ipap[axis].send_cmd('?syncres')
+            return ' '.join(result)
         elif parameter == 'statuslim-':
             parameter = 'statuslimneg'
             self._log.warning('Deprecation warning! ipython 5.5.0 is not '
@@ -773,7 +774,7 @@ class IcepapController(MotorController):
 
         attr = self.param2attr[parameter]
         result = self.ipap[axis].__getattribute__(attr)
-        if parameter.startswith('info'):
+        if parameter.startswith('info') or parameter in ('syncpos', 'syncaux'):
             result = ' '.join(result)
         return result
 
@@ -781,10 +782,9 @@ class IcepapController(MotorController):
         parameter = parameter.lower()
         if parameter == 'syncres':
             # TODO implement attribute on axis
-            value = ' '.join(value)
             self.ipap[axis].send_cmd('syncres {}'.format(value))
             return
-        if parameter.startswith('info'):
+        if parameter.startswith('info') or parameter in ('syncpos', 'syncaux'):
             value = value.split()
 
         attr = self.param2attr[parameter]

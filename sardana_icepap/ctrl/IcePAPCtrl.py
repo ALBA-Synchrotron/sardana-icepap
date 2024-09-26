@@ -61,8 +61,9 @@ class IcepapController(MotorController):
     ctrl_attributes = {
         'Pmux': {
             Type: str,
-            Description: 'Attribute to set/get the PMUX configuration. See '
-                         'IcePAP user manual pag. 107',
+            Description: 'Attribute to set/get the PMUX configuration. '
+                         'Multiple comma separated commands are allowed as set value. '
+                         'See IcePAP user manual pag. 107',
             Access: DataAccess.ReadWrite},
     }
     axis_attributes = {
@@ -140,16 +141,16 @@ class IcepapController(MotorController):
         'Encoder': {Type: float, Access: ReadOnly},
         'EcamDatTable': {Type: [float], Access: ReadWrite,
                          MaxDimSize: (20477,)},
-        'SyncAux': {Type: [str],
+        'SyncAux': {Type: str,
                     Description: 'Internal auxiliary synchronization line. '
                                  'It can use the same signals sources than '
                                  'InfoX.',
                     Access: ReadWrite},
-        'SyncPos': {Type: [str],
+        'SyncPos': {Type: str,
                     Description: 'Associates the internal Sync signal to the '
                                  'position signal selected',
                     Access: ReadWrite},
-        'SyncRes': {Type: [str],
+        'SyncRes': {Type: str,
                     Description: 'Sets the resolution of the internal Sync '
                                  'position signal.',
                     Access: ReadWrite},
@@ -760,7 +761,8 @@ class IcepapController(MotorController):
             return self.ipap[axis].get_velocity(vtype='CURRENT')
         elif parameter == 'syncres':
             # TODO implement attribute on axis class
-            return self.ipap[axis].send_cmd('?syncres')
+            result = self.ipap[axis].send_cmd('?syncres')
+            return ' '.join(result)
         elif parameter == 'statuslim-':
             parameter = 'statuslimneg'
             self._log.warning('Deprecation warning! ipython 5.5.0 is not '
@@ -772,7 +774,7 @@ class IcepapController(MotorController):
 
         attr = self.param2attr[parameter]
         result = self.ipap[axis].__getattribute__(attr)
-        if parameter.startswith('info'):
+        if parameter.startswith('info') or parameter in ('syncpos', 'syncaux'):
             result = ' '.join(result)
         return result
 
@@ -780,10 +782,9 @@ class IcepapController(MotorController):
         parameter = parameter.lower()
         if parameter == 'syncres':
             # TODO implement attribute on axis
-            value = ' '.join(value)
             self.ipap[axis].send_cmd('syncres {}'.format(value))
             return
-        if parameter.startswith('info'):
+        if parameter.startswith('info') or parameter in ('syncpos', 'syncaux'):
             value = value.split()
 
         attr = self.param2attr[parameter]
@@ -816,37 +817,41 @@ class IcepapController(MotorController):
     def SetCtrlPar(self, parameter, value):
         param = parameter.lower()
         if param == 'pmux':
-            value = value.lower()
-            if 'remove' in value:
-                args = value.split()
-                dest = ''
-                if len(args) > 1:
-                    dest = args[-1]
-                self.ipap.clear_pmux(dest=dest)
-            else:
-                args = value.split()
-                if len(args) == 1:
-                    self.ipap.add_pmux(source=args[0])
-                else:
-                    hard = 'hard' in args
-                    if hard:
-                        args.pop(args.index('hard'))
-                    pos = 'pos' in args
-                    if pos:
-                        args.pop(args.index('pos'))
-                    aux = 'aux' in value
-                    if aux:
-                        args.pop(args.index('aux'))
-
-                    source = args[0]
+            # Multiple comma separated commands are allowed
+            commands = value.lower().split(",")
+            for command in commands:
+                if 'remove' in command:
+                    args = command.split()
                     dest = ''
-                    if len(args) == 2:
-                        dest = args[1]
-                    if not any([pos, aux]):
-                        self.ipap.add_pmux(source=source, dest=dest)
+                    if len(args) > 1:
+                        dest = args[-1]
+                    self.ipap.clear_pmux(dest=dest)
+                else:
+                    args = command.split()
+                    if 'pmux' in args:
+                        args.pop(args.index('pmux'))
+                    if len(args) == 1:
+                        self.ipap.add_pmux(source=args[0])
                     else:
-                        self.ipap.add_pmux(source=source, dest=dest,
-                                           pos=pos, aux=aux, hard=hard)
+                        hard = 'hard' in args
+                        if hard:
+                            args.pop(args.index('hard'))
+                        pos = 'pos' in args
+                        if pos:
+                            args.pop(args.index('pos'))
+                        aux = 'aux' in command
+                        if aux:
+                            args.pop(args.index('aux'))
+
+                        source = args[0]
+                        dest = ''
+                        if len(args) == 2:
+                            dest = args[1]
+                        if not any([pos, aux]):
+                            self.ipap.add_pmux(source=source, dest=dest)
+                        else:
+                            self.ipap.add_pmux(source=source, dest=dest,
+                                               pos=pos, aux=aux, hard=hard)
         else:
             super(IcepapController, self).SetCtrlPar(parameter, value)
 

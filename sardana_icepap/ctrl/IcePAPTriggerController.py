@@ -28,6 +28,7 @@ from sardana.pool.controller import TriggerGateController, Access, Memorize, \
     Memorized, Type, Description, DataAccess, DefaultValue
 import tango
 import icepap
+import json
 
 
 LOW = 'low'
@@ -73,8 +74,9 @@ class IcePAPTriggerController(TriggerGateController):
         },
         'EcamSource': {
             Type: str,
-            Description: 'dic "axis, pos_sel, polarity" e.g: '
-                         ' {44: "ENCIN"}'
+            Description: 'json-compatible dict with key "axis"'
+                         ' and value "pos_sel, polarity" e.g: '
+                         ' {"44": "ENCIN"}'
                          'If the axis is not on the this list the syncpos '
                          'will use default value: AXIS,NORMAL',
             DefaultValue: ''
@@ -130,7 +132,14 @@ class IcePAPTriggerController(TriggerGateController):
         self.setted = False
         self._moveable_on_input = {}
         if self.EcamSource:
-            self._ecam_source_dict = eval(self.EcamSource)
+            try:
+                self._ecam_source_dict = json.loads(self.EcamSource)
+            except Exception as e:
+                self._log.error("EcamSource property must be json compatible")
+                raise e
+            
+            # Convert keys (axis number) to strings
+            self._ecam_source_dict = {int(axis): v for axis, v in self._ecam_source_dict.items()}
 
     def _set_out(self, out=LOW, axis=0):
         motor = self._ipap[self._motor_axis]

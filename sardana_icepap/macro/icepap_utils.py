@@ -59,17 +59,21 @@ def getIcepapMotor(motor_name):
 
 
 def getMotorPars(motor, pars):
-    return motor.read_attributes(pars)
+    try:
+        value = motor.read_attributes(pars).value
+    except Exception:
+        value = None
+    return value
 
 
-def _humanPar(par, fmt, error="ERROR!"):
+def _humanPar(value, fmt, error="ERROR!"):
     fmt = '{{:{}}}'.format(fmt)
-    return error if par.has_failed else fmt.format(par.value).strip()
+    return error if value is None else fmt.format(value).strip()
 
 
 def getHumanMotorPars(motor, pars, fmts):
     values = getMotorPars(motor, pars)
-    return [_humanPar(par, fmt).strip() for par, fmt in zip(values, fmts)]
+    return [_humanPar(value, fmt).strip() for value, fmt in zip(values, fmts)]
 
 
 def motorTable(motors, pars, fmts):

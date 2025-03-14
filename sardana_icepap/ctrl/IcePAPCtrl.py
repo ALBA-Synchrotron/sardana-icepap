@@ -56,6 +56,10 @@ class IcepapController(MotorController):
         'IcepapLogLevel': {Type: str,
                            Description: 'Icepap library logging level',
                            DefaultValue: 'INFO'},
+        'DefaultAutoESYNC': {Type: bool,
+                             Description: 'Default value for '
+                                          'AutoESYNC attribute',
+                             DefaultValue: False},
     }
 
     ctrl_attributes = {
@@ -73,8 +77,7 @@ class IcepapController(MotorController):
                         DefaultValue: True},
         'AutoESYNC': {Type: bool, Access: ReadWrite,
                       Description: 'Attribute to send ESYNC command before '
-                                   'to do the absolute position calculation.',
-                      DefaultValue: True},
+                                   'to do the absolute position calculation.'},
 
         'Indexer': {Type: str, Access: ReadWrite},
         'PowerOn': {Type: bool, Access: ReadWrite},
@@ -213,7 +216,7 @@ class IcepapController(MotorController):
             FakedAttributeProxy(self, axis, 'attr://PosEncIn')
         self.attributes[axis]['internal_encoder'] = True
         self.attributes[axis]['move_in_group'] = True
-        self.attributes[axis]['auto_esync'] = True
+        self.attributes[axis]['auto_esync'] = self.DefaultAutoESYNC
 
 
         if axis in self.ipap:

@@ -1,2 +1,1 @@
-# sardana-icepap
-IcePAP plugins for Sardana
+## sardana-icepap moved to https://gitlab.com/icepap-organization/sardana-icepap
